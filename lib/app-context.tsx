@@ -201,6 +201,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: 'sent',
       guardiansNotified: guardians.filter(g => g.isEmergencyContact).map(g => g.id),
     }]);
+    
+    // Send WhatsApp SOS with location
+    const phoneNumber = "917010029891";
+    
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const locationLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+          const message = `SOS! I am in danger! My location: ${locationLink}`;
+          const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+          window.location.href = url;
+        },
+        () => {
+          // Fallback if geolocation fails - use stored currentLocation
+          const locationLink = `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`;
+          const message = `SOS! I am in danger! My location: ${locationLink}`;
+          const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+          window.location.href = url;
+        }
+      );
+    } else {
+      // Fallback for browsers without geolocation
+      const locationLink = `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`;
+      const message = `SOS! I am in danger! My location: ${locationLink}`;
+      const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      window.location.href = url;
+    }
   }, [currentLocation, guardians]);
 
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
