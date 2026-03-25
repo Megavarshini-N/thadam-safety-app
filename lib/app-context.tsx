@@ -202,31 +202,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
       guardiansNotified: guardians.filter(g => g.isEmergencyContact).map(g => g.id),
     }]);
     
-    // Send WhatsApp SOS with location
-    const phoneNumber = "917010029891";
+    // Send WhatsApp SOS via Twilio API
+    const sendSOSMessage = async (latitude: number, longitude: number) => {
+      try {
+        const response = await fetch('/api/send-sos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ latitude, longitude }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to send SOS via Twilio');
+        }
+      } catch (error) {
+        console.error('Error sending SOS:', error);
+      }
+    };
     
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const locationLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-          const message = `SOS! I am in danger! My location: ${locationLink}`;
-          const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-          window.location.href = url;
+          sendSOSMessage(pos.coords.latitude, pos.coords.longitude);
         },
         () => {
           // Fallback if geolocation fails - use stored currentLocation
-          const locationLink = `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`;
-          const message = `SOS! I am in danger! My location: ${locationLink}`;
-          const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-          window.location.href = url;
+          sendSOSMessage(currentLocation.lat, currentLocation.lng);
         }
       );
     } else {
       // Fallback for browsers without geolocation
-      const locationLink = `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`;
-      const message = `SOS! I am in danger! My location: ${locationLink}`;
-      const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-      window.location.href = url;
+      sendSOSMessage(currentLocation.lat, currentLocation.lng);
     }
   }, [currentLocation, guardians]);
 
