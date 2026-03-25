@@ -201,6 +201,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: 'sent',
       guardiansNotified: guardians.filter(g => g.isEmergencyContact).map(g => g.id),
     }]);
+    
+    // Send WhatsApp SOS via Twilio API
+    const sendSOSMessage = async (latitude: number, longitude: number) => {
+      try {
+        const response = await fetch('/api/send-sos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ latitude, longitude }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to send SOS via Twilio');
+        }
+      } catch (error) {
+        console.error('Error sending SOS:', error);
+      }
+    };
+    
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          sendSOSMessage(pos.coords.latitude, pos.coords.longitude);
+        },
+        () => {
+          // Fallback if geolocation fails - use stored currentLocation
+          sendSOSMessage(currentLocation.lat, currentLocation.lng);
+        }
+      );
+    } else {
+      // Fallback for browsers without geolocation
+      sendSOSMessage(currentLocation.lat, currentLocation.lng);
+    }
   }, [currentLocation, guardians]);
 
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
